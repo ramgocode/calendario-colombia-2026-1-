@@ -190,7 +190,7 @@ export default function App() {
         aria-hidden="true"
       >
         <img 
-          src="src/imagenes/ALA.png" 
+          src="/ALA.png" 
           alt=""
           className="w-full h-full object-cover opacity-[0.20] contrast-125 grayscale-[0.2]"
           referrerPolicy="no-referrer"
