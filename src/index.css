@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Helvetica Neue", "Arial", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Georgia", "Times New Roman", serif;
+  --font-mono: "Courier Prime", "Courier New", monospace;
+  
+  --color-editorial-bg: #FDFCF8;
+  --color-editorial-ink: #1A1A1A;
+  --color-editorial-border: #E0DDD5;
+  --color-editorial-gold: #D4AF37;
+  --color-editorial-navy: #2A4B7C;
+  --color-editorial-red: #A13D2D;
+  --color-editorial-purple: #6D5B8E;
+  --color-editorial-orange: #C97B30;
+  --color-editorial-green: #5D725D;
+  --color-editorial-gray: #F0EEE9;
+}
+
+
