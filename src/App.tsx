@@ -196,6 +196,8 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
           const eventos = activeMap[dateKey] || [];
           const isToday = today.getDate() === day && today.getMonth() === monthIndex && today.getFullYear() === year;
           const isSelected = selection?.day === day;
+          const dayOfWeek = (firstDayOfWeek + day - 1) % 7;
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
           
           let cellClass = "h-8 w-full flex items-center justify-center text-xs cursor-pointer transition-all duration-300 relative rounded-md ";
           
@@ -203,6 +205,8 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
             cellClass += `${COLOR_MAP[eventos[0].cls].bg} ${COLOR_MAP[eventos[0].cls].text} font-black shadow-md z-10`;
           } else if (isToday) {
             cellClass += "ring-2 ring-editorial-navy text-editorial-navy font-bold bg-white/50";
+          } else if (isWeekend) {
+            cellClass += "bg-editorial-ink/10 text-editorial-ink hover:bg-editorial-gold/20 hover:font-bold";
           } else {
             cellClass += "text-editorial-ink/80 hover:bg-editorial-gold/20 hover:text-editorial-ink hover:font-bold";
           }
@@ -246,7 +250,10 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
               exit={{ opacity: 0, scale: 0.8, y: 10 }}
               className="absolute -bottom-2 right-0 left-0 z-50 px-4 pointer-events-none"
             >
-              <div className="bg-editorial-ink text-white p-3 rounded-sm shadow-2xl border border-white/20 backdrop-blur-md max-w-[220px] mx-auto pointer-events-auto">
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="bg-editorial-ink text-white p-3 rounded-sm shadow-2xl border border-white/20 backdrop-blur-md max-w-[220px] mx-auto pointer-events-auto"
+              >
                 <div className="flex flex-col gap-1">
                   <p className="text-[9px] font-serif italic leading-tight text-white/90">
                     "{selection.phrase}"
@@ -405,9 +412,8 @@ export default function App() {
         className={`fixed inset-0 pointer-events-none transition-opacity duration-700 z-0 ${hoverCls ? COLOR_MAP[hoverCls].overlay : 'opacity-0'}`} 
       />
 
-      {/* Contenedor de la aplicación (Detiene la propagación de clics para no cerrar la selección accidentalmente) */}
+      {/* Contenedor de la aplicación */}
       <div 
-        onClick={(e) => e.stopPropagation()}
         className="relative z-10 max-w-[1200px] mx-auto w-full flex-grow flex flex-col"
       >
         
