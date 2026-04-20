@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Calculator, X } from 'lucide-react';
 
 /**
  * @license
@@ -22,7 +23,7 @@ interface SpecialDatesMap {
 
 // --- CONFIGURACIÓN DE COLORES ---
 const COLOR_MAP: Record<EventType, { bg: string, text: string, overlay: string }> = {
-  festivo: { bg: 'bg-editorial-gold', text: 'text-editorial-ink', overlay: 'bg-editorial-gold/10' },
+  festivo: { bg: 'bg-[#C5A028]', text: 'text-white', overlay: 'bg-editorial-gold/10' }, // Mostaza más intenso
   profesion: { bg: 'bg-editorial-navy', text: 'text-white', overlay: 'bg-editorial-navy/10' },
   fiesta: { bg: 'bg-editorial-red', text: 'text-white', overlay: 'bg-editorial-red/10' },
   hoy: { bg: 'bg-transparent', text: 'text-editorial-navy', overlay: '' },
@@ -160,36 +161,37 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
   const activeMap = viewMode === 'festivos' ? FESTIVOS : viewMode === 'profesiones' ? PROFESIONES : FIESTAS;
 
   return (
-    <div className="flex flex-col group">
-      <h3 className="text-base font-serif italic border-b border-editorial-border pb-1 mb-2 text-editorial-ink capitalize">
+    <div className="flex flex-col group glass-card p-6 rounded-lg transition-transform hover:scale-[1.02] duration-500">
+      <h3 className="text-xl font-serif italic border-b-2 border-editorial-ink/10 pb-2 mb-4 text-editorial-ink capitalize tracking-tight">
         {monthName}
       </h3>
       
-      <div className="grid grid-cols-7 text-center font-mono">
+      <div className="grid grid-cols-7 text-center font-mono gap-y-1">
         {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => (
-          <span key={i} className="text-[9px] font-bold text-gray-400 pb-1">{d}</span>
+          <span key={i} className="text-[10px] font-bold text-editorial-ink/40 pb-2">{d}</span>
         ))}
         
-        {blanks.map(b => <div key={`b-${b}`} className="h-5" />)}
+        {blanks.map(b => <div key={`b-${b}`} className="h-8" />)}
         
         {days.map(day => {
           const dateKey = `${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const eventos = activeMap[dateKey] || [];
           const isToday = today.getDate() === day && today.getMonth() === monthIndex && today.getFullYear() === year;
           
-          let cellClass = "h-5 flex items-center justify-center text-[11px] cursor-pointer transition-all duration-300 relative ";
+          let cellClass = "h-8 w-full flex items-center justify-center text-xs cursor-pointer transition-all duration-300 relative rounded-md ";
           
           if (eventos.length > 0) {
-            cellClass += `${COLOR_MAP[eventos[0].cls].bg} ${COLOR_MAP[eventos[0].cls].text} font-bold rounded-[2px] shadow-sm z-10`;
+            cellClass += `${COLOR_MAP[eventos[0].cls].bg} ${COLOR_MAP[eventos[0].cls].text} font-black shadow-md z-10`;
           } else if (isToday) {
-            cellClass += "outline-1 outline-editorial-navy text-editorial-navy font-bold rounded-[2px]";
+            cellClass += "ring-2 ring-editorial-navy text-editorial-navy font-bold bg-white/50";
           } else {
-            cellClass += "text-editorial-ink hover:bg-editorial-gray/60";
+            cellClass += "text-editorial-ink/80 hover:bg-editorial-gold/20 hover:text-editorial-ink hover:font-bold";
           }
 
           return (
-            <div
+            <motion.div
               key={day}
+              whileHover={{ scale: 1.1 }}
               className={cellClass}
               onClick={(e) => {
                 e.stopPropagation();
@@ -207,7 +209,7 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
               onMouseLeave={() => onHoverSpecial(null)}
             >
               {day}
-            </div>
+            </motion.div>
           );
         })}
       </div>
@@ -225,6 +227,8 @@ export default function App() {
   const [hoveredSpecial, setHoveredSpecial] = useState<SpecialDate | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('festivos');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isCalcOpen, setIsCalcOpen] = useState(false);
+  const [calcDates, setCalcDates] = useState({ start: '', end: '' });
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -274,6 +278,35 @@ export default function App() {
       nextFDays: nextF ? getDaysDiff(nextF.date) : 0
     };
   }, [today, year]);
+
+  const dateDiffResult = useMemo(() => {
+    if (!calcDates.start || !calcDates.end) return null;
+    
+    const d1 = new Date(calcDates.start);
+    const d2 = new Date(calcDates.end);
+    
+    const utc1 = Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth(), d1.getUTCDate(), d1.getUTCHours(), d1.getUTCMinutes());
+    const utc2 = Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate(), d2.getUTCHours(), d2.getUTCMinutes());
+    
+    const diffMs = utc2 - utc1;
+    const isPast = diffMs < 0;
+    const absDiff = Math.abs(diffMs);
+    
+    const hours = Math.floor(absDiff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+    const remainingDays = days % 7;
+    const remainingHours = hours % 24;
+    
+    return {
+      days,
+      weeks,
+      remainingDays,
+      remainingHours,
+      isPast,
+      message: isPast ? `Han pasado ${days} días` : `Faltan ${days} días`
+    };
+  }, [calcDates]);
 
   const handleDayClick = (info: string, day: number, month: number) => {
     const dayOfYear = DAYS_BEFORE_MONTH[month] + day;
@@ -352,10 +385,104 @@ export default function App() {
             </div>
           </div>
 
-          <div className="year-display font-serif text-6xl md:text-[82px] font-light leading-[0.7] text-editorial-navy mt-4 md:mt-0">
+          <div className="year-display font-serif text-7xl md:text-[100px] font-light leading-[0.7] text-editorial-navy mt-4 md:mt-0 relative tracking-tighter">
             {year}
+            {/* Botón Calculadora: Ajustado para ser más pequeño y proporcional */}
+            <button 
+              onClick={() => setIsCalcOpen(true)}
+              className="absolute -top-2 -right-8 w-8 h-8 md:w-10 md:h-10 bg-white border-2 border-editorial-navy rounded-full flex items-center justify-center text-editorial-navy shadow-lg hover:bg-editorial-navy hover:text-white transition-all duration-500 group cursor-pointer z-20"
+              title="Calculadora de fechas"
+            >
+              <Calculator size={16} className="group-hover:rotate-12 transition-transform" />
+            </button>
           </div>
         </header>
+
+        {/* Modal Calculadora de Fechas: Estilo coherente con el calendario */}
+        <AnimatePresence>
+          {isCalcOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-editorial-navy/60 backdrop-blur-md"
+              onClick={() => setIsCalcOpen(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 30 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 30 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-editorial-bg border-2 border-editorial-ink w-full max-w-md p-10 shadow-[20px_20px_0px_0px_rgba(26,26,26,0.1)] relative rounded-sm glass-card"
+              >
+                <button 
+                  onClick={() => setIsCalcOpen(false)}
+                  className="absolute top-6 right-6 text-editorial-ink hover:rotate-90 transition-transform duration-300"
+                >
+                  <X size={20} />
+                </button>
+
+                <h2 className="text-3xl font-serif font-bold italic mb-8 border-b-2 border-editorial-ink pb-3 tracking-tighter">Calculadora Temporal</h2>
+                
+                <div className="space-y-8">
+                  <div className="space-y-3">
+                    <label className="text-[11px] uppercase tracking-[3px] font-bold text-editorial-navy">Punto de Origen</label>
+                    <input 
+                      type="date" 
+                      value={calcDates.start}
+                      onChange={(e) => setCalcDates(prev => ({ ...prev, start: e.target.value }))}
+                      className="w-full bg-white/50 border-b-2 border-editorial-ink py-3 font-mono text-sm focus:border-editorial-gold outline-none transition-all placeholder:opacity-30"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[11px] uppercase tracking-[3px] font-bold text-editorial-navy">Punto Objetivo</label>
+                    <input 
+                      type="date" 
+                      value={calcDates.end}
+                      onChange={(e) => setCalcDates(prev => ({ ...prev, end: e.target.value }))}
+                      className="w-full bg-white/50 border-b-2 border-editorial-ink py-3 font-mono text-sm focus:border-editorial-gold outline-none transition-all placeholder:opacity-30"
+                    />
+                  </div>
+
+                  {dateDiffResult && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white/40 p-8 border border-editorial-ink/10 rounded-sm mt-8"
+                    >
+                      <p className="text-2xl font-serif italic text-editorial-navy mb-5 border-b border-editorial-ink/5 pb-2">
+                        {dateDiffResult.message}
+                      </p>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <p className="text-[10px] uppercase tracking-widest font-black text-editorial-ink/40">Semanas</p>
+                          <p className="text-2xl font-mono font-bold text-editorial-gold">{dateDiffResult.weeks}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[10px] uppercase tracking-widest font-black text-editorial-ink/40">Días Adicionales</p>
+                          <p className="text-2xl font-mono font-bold text-editorial-gold">{dateDiffResult.remainingDays}</p>
+                        </div>
+                        <div className="col-span-2 pt-4 border-t border-editorial-ink/5">
+                          <p className="text-[10px] uppercase tracking-[2px] font-black text-editorial-ink/40 mb-2">Acumulado Horario</p>
+                          <p className="text-3xl font-mono font-black text-editorial-navy">
+                            {dateDiffResult.days * 24} <span className="text-sm font-serif font-normal italic">horas</span>
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {!dateDiffResult && (
+                    <div className="h-32 flex items-center justify-center border-2 border-dashed border-editorial-ink/20 text-[10px] uppercase tracking-widest opacity-30">
+                      Introduce ambas fechas para calcular
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Contadores Dinámicos */}
         {viewMode === 'festivos' && (
@@ -401,21 +528,21 @@ export default function App() {
         {/* Área Visual Dinámica */}
         <div className="min-h-[140px] flex flex-col items-center justify-center mb-8 gap-4 px-4 text-center">
           {selection ? (
-            <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-2xl w-full">
-              <div className="bg-editorial-gray border border-editorial-border py-2 px-6 rounded-sm self-center">
-                <p className="text-[10px] uppercase tracking-widest font-bold opacity-60 mb-1">
+            <div className="flex flex-col md:flex-row gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-4xl w-full items-stretch text-left">
+              <div className="bg-editorial-gray border border-editorial-border py-4 px-6 rounded-sm flex flex-col justify-center md:w-1/3">
+                <p className="text-[9px] uppercase tracking-widest font-bold opacity-60 mb-2">
                   Evento Detectado
                 </p>
-                <p className="text-sm md:text-lg font-serif italic text-editorial-ink">
+                <p className="text-sm md:text-base font-serif italic text-editorial-ink leading-tight">
                   {selection.info}
                 </p>
               </div>
               
-              <div className={`relative p-4 md:p-6 border-l-4 bg-white shadow-sm ring-1 ring-editorial-border/50 ${viewMode === 'fiestas' ? 'border-editorial-red' : viewMode === 'profesiones' ? 'border-editorial-navy' : 'border-editorial-gold'}`}>
-                <p className="text-base md:text-xl font-serif italic leading-relaxed text-editorial-ink mb-2">
+              <div className={`flex-1 relative p-4 md:p-5 border-l-4 bg-white shadow-sm ring-1 ring-editorial-border/50 flex flex-col justify-center ${viewMode === 'fiestas' ? 'border-editorial-red' : viewMode === 'profesiones' ? 'border-editorial-navy' : 'border-editorial-gold'}`}>
+                <p className="text-sm md:text-base font-serif italic leading-relaxed text-editorial-ink mb-1">
                   "{selection.phrase}"
                 </p>
-                <p className="text-[10px] uppercase tracking-[2px] font-bold text-editorial-navy text-right">
+                <p className="text-[9px] uppercase tracking-[2px] font-bold text-editorial-navy text-right">
                    — {selection.author}
                 </p>
               </div>
@@ -430,8 +557,8 @@ export default function App() {
           )}
         </div>
 
-        {/* Grilla de los 12 meses del año */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-10 flex-grow">
+        {/* Grilla de los 12 meses del año: Dashboard Scale */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 flex-grow py-10">
           {months.map(m => (
             <MonthCard 
               key={m}

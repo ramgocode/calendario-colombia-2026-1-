@@ -18,4 +18,24 @@
   --color-editorial-gray: #F0EEE9;
 }
 
+/* Textura de papel antiguo sutil */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.8;
+  background-image: url("https://www.transparenttextures.com/patterns/parchment.png");
+  mix-blend-mode: multiply;
+}
+
+/* Efecto de tarjetas translúcidas */
+.glass-card {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(224, 221, 213, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+}
+
 
