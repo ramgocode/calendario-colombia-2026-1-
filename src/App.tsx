@@ -147,9 +147,10 @@ interface MonthProps {
   viewMode: ViewMode;
   onDayClick: (info: string, day: number, month: number) => void;
   onHoverSpecial: (info: SpecialDate | null) => void;
+  selection: { info: string, phrase: string, author: string, day: number } | null;
 }
 
-const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, onDayClick, onHoverSpecial }) => {
+const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, onDayClick, onHoverSpecial, selection }) => {
   const monthName = new Intl.DateTimeFormat('es-CO', { month: 'long' }).format(new Date(year, monthIndex));
   
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
@@ -161,12 +162,29 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
   const activeMap = viewMode === 'festivos' ? FESTIVOS : viewMode === 'profesiones' ? PROFESIONES : FIESTAS;
 
   return (
-    <div className="flex flex-col group glass-card p-6 rounded-lg transition-transform hover:scale-[1.02] duration-500">
-      <h3 className="text-xl font-serif italic border-b-2 border-editorial-ink/10 pb-2 mb-4 text-editorial-ink capitalize tracking-tight">
-        {monthName}
-      </h3>
+    <div className="flex flex-col group glass-card p-6 rounded-lg transition-transform hover:scale-[1.01] duration-500 relative">
+      <div className="flex justify-between items-baseline border-b-2 border-editorial-ink/10 pb-2 mb-4 overflow-hidden">
+        <h3 className="text-xl font-serif italic text-editorial-ink capitalize tracking-tight shrink-0">
+          {monthName}
+        </h3>
+        
+        <AnimatePresence mode="wait">
+          {selection && (
+            <motion.div
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -20, opacity: 0 }}
+              className="text-right"
+            >
+              <p className="text-[10px] font-serif italic text-editorial-navy font-bold leading-none truncate max-w-[150px]">
+                {selection.info.split(': ')[1] || selection.info}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       
-      <div className="grid grid-cols-7 text-center font-mono gap-y-1">
+      <div className="grid grid-cols-7 text-center font-mono gap-y-1 relative">
         {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => (
           <span key={i} className="text-[10px] font-bold text-editorial-ink/40 pb-2">{d}</span>
         ))}
@@ -177,6 +195,7 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
           const dateKey = `${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const eventos = activeMap[dateKey] || [];
           const isToday = today.getDate() === day && today.getMonth() === monthIndex && today.getFullYear() === year;
+          const isSelected = selection?.day === day;
           
           let cellClass = "h-8 w-full flex items-center justify-center text-xs cursor-pointer transition-all duration-300 relative rounded-md ";
           
@@ -186,6 +205,10 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
             cellClass += "ring-2 ring-editorial-navy text-editorial-navy font-bold bg-white/50";
           } else {
             cellClass += "text-editorial-ink/80 hover:bg-editorial-gold/20 hover:text-editorial-ink hover:font-bold";
+          }
+
+          if (isSelected && eventos.length === 0) {
+            cellClass += " bg-editorial-gold/30 ring-1 ring-editorial-gold";
           }
 
           return (
@@ -199,9 +222,10 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
                 if (eventos.length > 0) {
                   info = `${day} de ${monthName}: ${eventos.map(ev => ev.txt).join(' & ')}`;
                 } else if (isToday) {
-                  info = `Hoy es ${day} de ${monthName}, ¡día actual!`;
+                  info = `Hoy es ${day} de ${monthName}: Día actual`;
                 } else {
-                  info = `${day} de ${monthName}`;
+                  // No asignar info si no es especial
+                  info = "";
                 }
                 onDayClick(info, day, monthIndex);
               }}
@@ -212,6 +236,29 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
             </motion.div>
           );
         })}
+
+        {/* Ventana flotante para la Frase del Día */}
+        <AnimatePresence>
+          {selection && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+              className="absolute -bottom-2 right-0 left-0 z-50 px-4 pointer-events-none"
+            >
+              <div className="bg-editorial-ink text-white p-3 rounded-sm shadow-2xl border border-white/20 backdrop-blur-md max-w-[220px] mx-auto pointer-events-auto">
+                <div className="flex flex-col gap-1">
+                  <p className="text-[9px] font-serif italic leading-tight text-white/90">
+                    "{selection.phrase}"
+                  </p>
+                  <p className="text-[7px] uppercase tracking-[1px] font-black text-editorial-gold text-right">
+                    — {selection.author}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -223,12 +270,13 @@ export default function App() {
   const today = new Date();
 
   // Estados
-  const [selection, setSelection] = useState<{ info: string, phrase: string, author: string } | null>(null);
+  const [selection, setSelection] = useState<{ info: string, phrase: string, author: string, day: number, month: number } | null>(null);
   const [hoveredSpecial, setHoveredSpecial] = useState<SpecialDate | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('festivos');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isCalcOpen, setIsCalcOpen] = useState(false);
   const [calcDates, setCalcDates] = useState({ start: '', end: '' });
+  const [excludedDays, setExcludedDays] = useState<number[]>([]); // 0=D, 1=L, 2=M, 3=M, 4=J, 5=V, 6=S
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -285,28 +333,38 @@ export default function App() {
     const d1 = new Date(calcDates.start);
     const d2 = new Date(calcDates.end);
     
-    const utc1 = Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth(), d1.getUTCDate(), d1.getUTCHours(), d1.getUTCMinutes());
-    const utc2 = Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate(), d2.getUTCHours(), d2.getUTCMinutes());
+    const utc1 = Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth(), d1.getUTCDate());
+    const utc2 = Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate());
     
     const diffMs = utc2 - utc1;
     const isPast = diffMs < 0;
     const absDiff = Math.abs(diffMs);
     
-    const hours = Math.floor(absDiff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-    const weeks = Math.floor(days / 7);
-    const remainingDays = days % 7;
-    const remainingHours = hours % 24;
+    const totalDays = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+    
+    // Calcular días filtrados (quitando los excluidos)
+    let filteredDays = 0;
+    const current = new Date(isPast ? d2 : d1);
+    const target = new Date(isPast ? d1 : d2);
+
+    for (let d = new Date(current); d <= target; d.setDate(d.getDate() + 1)) {
+      if (!excludedDays.includes(d.getDay())) {
+        filteredDays++;
+      }
+    }
+
+    const weeks = Math.floor(totalDays / 7);
+    const remainingDays = totalDays % 7;
     
     return {
-      days,
+      days: totalDays,
+      filteredDays,
       weeks,
       remainingDays,
-      remainingHours,
       isPast,
-      message: isPast ? `Han pasado ${days} días` : `Faltan ${days} días`
+      message: isPast ? `Han pasado ${totalDays} días` : `Faltan ${totalDays} días`
     };
-  }, [calcDates]);
+  }, [calcDates, excludedDays]);
 
   const handleDayClick = (info: string, day: number, month: number) => {
     const dayOfYear = DAYS_BEFORE_MONTH[month] + day;
@@ -315,7 +373,9 @@ export default function App() {
     setSelection({
       info,
       phrase: phraseData.text,
-      author: phraseData.author
+      author: phraseData.author,
+      day,
+      month
     });
   };
 
@@ -445,6 +505,29 @@ export default function App() {
                     />
                   </div>
 
+                  {/* Barra de selección de días hábiles/excluidos */}
+                  <div className="space-y-4 pt-2">
+                    <label className="text-[10px] uppercase tracking-[2px] font-black opacity-40">Excluir días de la semana</label>
+                    <div className="flex justify-between gap-2">
+                      {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((day, idx) => {
+                        const isExcluded = excludedDays.includes(idx);
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setExcludedDays(prev => 
+                                isExcluded ? prev.filter(d => d !== idx) : [...prev, idx]
+                              );
+                            }}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-black transition-all ${isExcluded ? 'bg-editorial-red text-white shadow-lg scale-110' : 'bg-editorial-gray text-editorial-ink hover:bg-editorial-ink hover:text-white'}`}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {dateDiffResult && (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
@@ -456,17 +539,17 @@ export default function App() {
                       </p>
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-1">
-                          <p className="text-[10px] uppercase tracking-widest font-black text-editorial-ink/40">Semanas</p>
-                          <p className="text-2xl font-mono font-bold text-editorial-gold">{dateDiffResult.weeks}</p>
+                          <p className="text-[10px] uppercase tracking-widest font-black text-editorial-ink/40">Días Laborales</p>
+                          <p className="text-2xl font-mono font-bold text-editorial-gold">{dateDiffResult.filteredDays}</p>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-[10px] uppercase tracking-widest font-black text-editorial-ink/40">Días Adicionales</p>
-                          <p className="text-2xl font-mono font-bold text-editorial-gold">{dateDiffResult.remainingDays}</p>
+                          <p className="text-[10px] uppercase tracking-widest font-black text-editorial-ink/40">Total Semanas</p>
+                          <p className="text-2xl font-mono font-bold text-editorial-gold">{dateDiffResult.weeks}</p>
                         </div>
                         <div className="col-span-2 pt-4 border-t border-editorial-ink/5">
-                          <p className="text-[10px] uppercase tracking-[2px] font-black text-editorial-ink/40 mb-2">Acumulado Horario</p>
-                          <p className="text-3xl font-mono font-black text-editorial-navy">
-                            {dateDiffResult.days * 24} <span className="text-sm font-serif font-normal italic">horas</span>
+                          <p className="text-[10px] uppercase tracking-[2px] font-black text-editorial-ink/40 mb-2">Resumen Temporal</p>
+                          <p className="text-2xl font-mono font-black text-editorial-navy">
+                            {dateDiffResult.days} <span className="text-sm font-serif font-normal italic">días totales</span>
                           </p>
                         </div>
                       </div>
@@ -525,37 +608,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Área Visual Dinámica */}
-        <div className="min-h-[140px] flex flex-col items-center justify-center mb-8 gap-4 px-4 text-center">
-          {selection ? (
-            <div className="flex flex-col md:flex-row gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-4xl w-full items-stretch text-left">
-              <div className="bg-editorial-gray border border-editorial-border py-4 px-6 rounded-sm flex flex-col justify-center md:w-1/3">
-                <p className="text-[9px] uppercase tracking-widest font-bold opacity-60 mb-2">
-                  Evento Detectado
-                </p>
-                <p className="text-sm md:text-base font-serif italic text-editorial-ink leading-tight">
-                  {selection.info}
-                </p>
-              </div>
-              
-              <div className={`flex-1 relative p-4 md:p-5 border-l-4 bg-white shadow-sm ring-1 ring-editorial-border/50 flex flex-col justify-center ${viewMode === 'fiestas' ? 'border-editorial-red' : viewMode === 'profesiones' ? 'border-editorial-navy' : 'border-editorial-gold'}`}>
-                <p className="text-sm md:text-base font-serif italic leading-relaxed text-editorial-ink mb-1">
-                  "{selection.phrase}"
-                </p>
-                <p className="text-[9px] uppercase tracking-[2px] font-bold text-editorial-navy text-right">
-                   — {selection.author}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2 opacity-30">
-              <p className="text-[10px] uppercase tracking-[3px]">
-                {viewMode === 'fiestas' ? 'Explora las ferias y carnavales' : viewMode === 'profesiones' ? 'Tributo a los oficios de Colombia' : 'Seleccione un festivo oficial'}
-              </p>
-              <div className="w-12 h-[1px] bg-editorial-ink"></div>
-            </div>
-          )}
-        </div>
 
         {/* Grilla de los 12 meses del año: Dashboard Scale */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10 flex-grow py-10">
@@ -568,6 +620,7 @@ export default function App() {
               viewMode={viewMode}
               onDayClick={handleDayClick}
               onHoverSpecial={(info) => setHoveredSpecial(info)}
+              selection={selection && selection.month === m ? selection : null}
             />
           ))}
         </div>
