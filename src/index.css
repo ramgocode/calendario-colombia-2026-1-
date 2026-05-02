@@ -6,16 +6,60 @@
   --font-serif: "Georgia", "Times New Roman", serif;
   --font-mono: "Courier Prime", "Courier New", monospace;
   
-  --color-editorial-bg: #FDFCF8;
-  --color-editorial-ink: #1A1A1A;
-  --color-editorial-border: #E0DDD5;
-  --color-editorial-gold: #D4AF37;
-  --color-editorial-navy: #2A4B7C;
-  --color-editorial-red: #A13D2D;
-  --color-editorial-purple: #6D5B8E;
-  --color-editorial-orange: #C97B30;
-  --color-editorial-green: #5D725D;
-  --color-editorial-gray: #F0EEE9;
+  --color-editorial-bg: var(--editorial-bg);
+  --color-editorial-ink: var(--editorial-ink);
+  --color-editorial-ink-secondary: var(--editorial-ink-secondary);
+  --color-editorial-border: var(--editorial-border);
+  --color-editorial-gold: var(--editorial-gold);
+  --color-editorial-navy: var(--editorial-navy);
+  --color-editorial-red: var(--editorial-red);
+  --color-editorial-purple: var(--editorial-purple);
+  --color-editorial-orange: var(--editorial-orange);
+  --color-editorial-green: var(--editorial-green);
+  --color-editorial-gray: var(--editorial-gray);
+  --color-hover-bg: var(--hover-bg);
+  --color-event-bg: var(--event-bg);
+  --color-header-bg: var(--header-bg);
+}
+
+:root {
+  --editorial-bg: #FDFCF8;
+  --editorial-ink: #1A1A1A;
+  --editorial-ink-secondary: rgba(26, 26, 26, 0.6);
+  --editorial-border: #E0DDD5;
+  --editorial-gold: #D4AF37;
+  --editorial-navy: #2A4B7C;
+  --editorial-red: #A13D2D;
+  --editorial-purple: #6D5B8E;
+  --editorial-orange: #C97B30;
+  --editorial-green: #5D725D;
+  --editorial-gray: #F0EEE9;
+  --hover-bg: rgba(212, 175, 55, 0.2);
+  --event-bg: #D4AF37;
+  --header-bg: transparent;
+  
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(224, 221, 213, 0.5);
+  --parchment-opacity: 0.8;
+}
+
+.dark-mode {
+  --editorial-bg: #1a1a2e;
+  --editorial-ink: #ffffff;
+  --editorial-ink-secondary: #a0a0b0;
+  --editorial-border: #2a2a4a;
+  --editorial-gold: #4a90d9;
+  --editorial-navy: #4a90d9;
+  --editorial-red: #e94560;
+  --editorial-purple: #533483;
+  --editorial-gray: #16213e;
+  --hover-bg: #1e2a4a;
+  --event-bg: #4a90d9;
+  --header-bg: #0f3460;
+  
+  --glass-bg: rgba(22, 33, 62, 0.7);
+  --glass-border: rgba(42, 42, 74, 0.5);
+  --parchment-opacity: 0.1;
 }
 
 /* Textura de papel antiguo sutil */
@@ -25,17 +69,24 @@ body::before {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.8;
+  opacity: var(--parchment-opacity);
   background-image: url("https://www.transparenttextures.com/patterns/parchment.png");
   mix-blend-mode: multiply;
+  transition: opacity 0.3s ease;
 }
 
 /* Efecto de tarjetas translúcidas */
 .glass-card {
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--glass-bg);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(224, 221, 213, 0.5);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+body {
+  background-color: var(--editorial-bg);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 

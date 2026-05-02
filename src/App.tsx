@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Calculator, X } from 'lucide-react';
+import { Calculator, X, Eye, EyeOff } from 'lucide-react';
 
 /**
  * @license
@@ -148,9 +148,10 @@ interface MonthProps {
   onDayClick: (info: string, day: number, month: number) => void;
   onHoverSpecial: (info: SpecialDate | null) => void;
   selection: { info: string, phrase: string, author: string, day: number } | null;
+  darkMode: boolean;
 }
 
-const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, onDayClick, onHoverSpecial, selection }) => {
+const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, onDayClick, onHoverSpecial, selection, darkMode }) => {
   const monthName = new Intl.DateTimeFormat('es-CO', { month: 'long' }).format(new Date(year, monthIndex));
   
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
@@ -164,7 +165,7 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
   return (
     <div className="flex flex-col group glass-card p-6 rounded-lg transition-transform hover:scale-[1.01] duration-500 relative">
       <div className="flex justify-between items-baseline border-b-2 border-editorial-ink/10 pb-2 mb-4 overflow-hidden">
-        <h3 className="text-xl font-serif italic text-editorial-ink capitalize tracking-tight shrink-0">
+        <h3 className={`text-xl font-serif italic capitalize tracking-tight shrink-0 ${darkMode ? 'text-white' : 'text-editorial-ink'}`}>
           {monthName}
         </h3>
         
@@ -176,7 +177,7 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
               exit={{ x: -20, opacity: 0 }}
               className="text-right"
             >
-              <p className="text-[10px] font-serif italic text-editorial-navy font-bold leading-none truncate max-w-[150px]">
+              <p className={`text-[10px] font-serif italic font-bold leading-none truncate max-w-[150px] ${darkMode ? 'text-editorial-gold' : 'text-editorial-navy'}`}>
                 {selection.info.split(': ')[1] || selection.info}
               </p>
             </motion.div>
@@ -186,7 +187,7 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
       
       <div className="grid grid-cols-7 text-center font-mono gap-y-1 relative">
         {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => (
-          <span key={i} className="text-[10px] font-bold text-editorial-ink/40 pb-2">{d}</span>
+          <span key={i} className={`text-[10px] font-bold pb-2 ${darkMode ? 'text-white/60' : 'text-editorial-ink/40'}`}>{d}</span>
         ))}
         
         {blanks.map(b => <div key={`b-${b}`} className="h-8" />)}
@@ -204,15 +205,21 @@ const MonthCard: React.FC<MonthProps> = ({ monthIndex, year, today, viewMode, on
           if (eventos.length > 0) {
             cellClass += `${COLOR_MAP[eventos[0].cls].bg} ${COLOR_MAP[eventos[0].cls].text} font-black shadow-md z-10`;
           } else if (isToday) {
-            cellClass += "ring-2 ring-editorial-navy text-editorial-navy font-bold bg-white/50";
+            cellClass += darkMode 
+              ? "ring-2 ring-editorial-red text-editorial-red font-bold bg-editorial-red/10"
+              : "ring-2 ring-editorial-navy text-editorial-navy font-bold bg-white/50";
           } else if (isWeekend) {
             cellClass += "bg-editorial-ink/10 text-editorial-ink hover:bg-editorial-gold/20 hover:font-bold";
+            if (darkMode) cellClass = cellClass.replace("text-editorial-ink", "text-white");
           } else {
-            cellClass += "text-editorial-ink/80 hover:bg-editorial-gold/20 hover:text-editorial-ink hover:font-bold";
+            cellClass += "text-editorial-ink hover:bg-editorial-gold/20 hover:text-editorial-ink hover:font-bold";
+            if (darkMode) cellClass = cellClass.replace("text-editorial-ink", "text-white");
           }
 
           if (isSelected && eventos.length === 0) {
-            cellClass += " bg-editorial-gold/30 ring-1 ring-editorial-gold";
+            cellClass += darkMode 
+              ? " bg-editorial-purple/40 ring-1 ring-editorial-purple"
+              : " bg-editorial-gold/30 ring-1 ring-editorial-gold";
           }
 
           return (
@@ -284,6 +291,21 @@ export default function App() {
   const [isCalcOpen, setIsCalcOpen] = useState(false);
   const [calcDates, setCalcDates] = useState({ start: '', end: '' });
   const [excludedDays, setExcludedDays] = useState<number[]>([]); // 0=D, 1=L, 2=M, 3=M, 4=J, 5=V, 6=S
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('calendar-theme') === 'dark';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('calendar-theme', darkMode ? 'dark' : 'light');
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }, [darkMode]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -390,7 +412,7 @@ export default function App() {
     /* Contenedor principal con detección de clics externos para quitar la selección */
     <div 
       onClick={() => setSelection(null)}
-      className="min-h-screen bg-editorial-bg text-editorial-ink font-sans relative overflow-x-hidden p-6 md:p-10 flex flex-col"
+      className={`min-h-screen bg-editorial-bg text-editorial-ink font-sans relative overflow-x-hidden p-6 md:p-10 flex flex-col transition-colors duration-300 calendar ${darkMode ? 'dark-mode' : ''}`}
     >
       
       {/* Imagen de fondo difuminada (ALA.png personalizada) */}
@@ -401,10 +423,10 @@ export default function App() {
         <img 
           src="/ALA.png" 
           alt=""
-          className="w-full h-full object-cover opacity-[0.20] contrast-125 grayscale-[0.2]"
+          className={`w-full h-full object-cover contrast-125 grayscale-[0.2] transition-opacity duration-500 ${darkMode ? 'opacity-[0.1]' : 'opacity-[0.20]'}`}
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-editorial-bg/30"></div>
+        <div className={`absolute inset-0 transition-colors duration-500 ${darkMode ? 'bg-[#1a1a2e]/60' : 'bg-[#FDFCF8]/30'}`}></div>
       </div>
 
       {/* Overlay Dinámico de Fondo que reacciona al hover de fechas especiales */}
@@ -453,14 +475,33 @@ export default function App() {
 
           <div className="year-display font-serif text-7xl md:text-[100px] font-light leading-[0.7] text-editorial-navy mt-4 md:mt-0 relative tracking-tighter">
             {year}
-            {/* Botón Calculadora: Ajustado para ser más pequeño y proporcional */}
-            <button 
-              onClick={() => setIsCalcOpen(true)}
-              className="absolute -top-2 -right-8 w-8 h-8 md:w-10 md:h-10 bg-white border-2 border-editorial-navy rounded-full flex items-center justify-center text-editorial-navy shadow-lg hover:bg-editorial-navy hover:text-white transition-all duration-500 group cursor-pointer z-20"
-              title="Calculadora de fechas"
-            >
-              <Calculator size={16} className="group-hover:rotate-12 transition-transform" />
-            </button>
+            
+            {/* Contenedor de Botones Superiores (Dark Mode y Calculadora) */}
+            <div className="absolute -top-12 right-0 flex items-center gap-2">
+              {/* Botón Dark Mode: Ícono de ojo animado */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDarkMode(!darkMode);
+                }}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl hover:scale-110 border ${darkMode ? 'bg-editorial-gray text-white border-editorial-border' : 'bg-white text-editorial-ink border-editorial-ink'}`}
+                title={darkMode ? "Modo Claro" : "Modo Oscuro"}
+              >
+                {darkMode ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+
+              {/* Botón Calculadora: Ajustado para ser más pequeño y proporcional */}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCalcOpen(true);
+                }}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-500 shadow-lg group cursor-pointer border ${darkMode ? 'bg-editorial-gray text-white border-editorial-border' : 'bg-white text-editorial-navy border-editorial-navy hover:bg-editorial-navy hover:text-white'}`}
+                title="Calculadora de fechas"
+              >
+                <Calculator size={16} className="group-hover:rotate-12 transition-transform" />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -491,25 +532,25 @@ export default function App() {
                 <h2 className="text-3xl font-serif font-bold italic mb-8 border-b-2 border-editorial-ink pb-3 tracking-tighter">Calculadora Temporal</h2>
                 
                 <div className="space-y-8">
-                  <div className="space-y-3">
+                  <div className={`space-y-3 ${darkMode ? 'opacity-80' : ''}`}>
                     <label className="text-[11px] uppercase tracking-[3px] font-bold text-editorial-navy">Punto de Origen</label>
                     <input 
                       type="date" 
                       value={calcDates.start}
                       onChange={(e) => setCalcDates(prev => ({ ...prev, start: e.target.value }))}
-                      className="w-full bg-white/50 border-b-2 border-editorial-ink py-3 font-mono text-sm focus:border-editorial-gold outline-none transition-all placeholder:opacity-30"
+                      className="w-full bg-transparent border-b-2 border-editorial-ink py-3 font-mono text-sm focus:border-editorial-gold outline-none transition-all placeholder:opacity-30"
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="text-[11px] uppercase tracking-[3px] font-bold text-editorial-navy">Punto Objetivo</label>
-                    <input 
-                      type="date" 
-                      value={calcDates.end}
-                      onChange={(e) => setCalcDates(prev => ({ ...prev, end: e.target.value }))}
-                      className="w-full bg-white/50 border-b-2 border-editorial-ink py-3 font-mono text-sm focus:border-editorial-gold outline-none transition-all placeholder:opacity-30"
-                    />
-                  </div>
+                    <div className={`space-y-3 ${darkMode ? 'opacity-80' : ''}`}>
+                      <label className="text-[11px] uppercase tracking-[3px] font-bold text-editorial-navy">Punto Objetivo</label>
+                      <input 
+                        type="date" 
+                        value={calcDates.end}
+                        onChange={(e) => setCalcDates(prev => ({ ...prev, end: e.target.value }))}
+                        className="w-full bg-transparent border-b-2 border-editorial-ink py-3 font-mono text-sm focus:border-editorial-gold outline-none transition-all placeholder:opacity-30"
+                      />
+                    </div>
 
                   {/* Barra de selección de días hábiles/excluidos */}
                   <div className="space-y-4 pt-2">
@@ -538,7 +579,7 @@ export default function App() {
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-white/40 p-8 border border-editorial-ink/10 rounded-sm mt-8"
+                      className={`p-8 border border-editorial-ink/10 rounded-sm mt-8 ${darkMode ? 'bg-white/5' : 'bg-white/40'}`}
                     >
                       <p className="text-2xl font-serif italic text-editorial-navy mb-5 border-b border-editorial-ink/5 pb-2">
                         {dateDiffResult.message}
@@ -627,6 +668,7 @@ export default function App() {
               onDayClick={handleDayClick}
               onHoverSpecial={(info) => setHoveredSpecial(info)}
               selection={selection && selection.month === m ? selection : null}
+              darkMode={darkMode}
             />
           ))}
         </div>
@@ -646,7 +688,7 @@ export default function App() {
                 zIndex: 100,
                 pointerEvents: 'none'
               }}
-              className="max-w-[240px] bg-white border border-editorial-ink shadow-xl p-3 rounded-sm"
+              className={`max-w-[240px] border border-editorial-ink shadow-xl p-3 rounded-sm ${darkMode ? 'bg-editorial-gray' : 'bg-white'}`}
             >
               <p className="text-[10px] uppercase tracking-widest font-bold text-editorial-navy mb-1">
                 {hoveredSpecial.txt}
@@ -676,7 +718,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="hidden xl:block bg-editorial-gray px-4 py-2 rounded-[4px] italic text-[#555] lowercase first-letter:uppercase">
+          <div className="hidden xl:block bg-editorial-gray px-4 py-2 rounded-[4px] italic opacity-60 lowercase first-letter:uppercase">
             Próximo evento: 20 de Julio — Independencia de Colombia
           </div>
 
